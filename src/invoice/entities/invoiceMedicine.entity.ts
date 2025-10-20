@@ -19,6 +19,17 @@ export class InvoiceMedicine {
   @JoinColumn({ name: 'medicineId' })
   medicine: Medicine;
 
+   @Column('decimal', {
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value, // when saving
+      from: (value: string) => parseFloat(value), // when reading
+    },
+  })
+  medDiscount: number;
+
   @Column()
   qty: number;
 
