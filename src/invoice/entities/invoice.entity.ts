@@ -20,7 +20,7 @@ export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'int', unique: true })
+  @Column({ type: 'int' })
   invoiceNumber: number;
 
   @Column('decimal', {

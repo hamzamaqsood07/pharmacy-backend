@@ -23,12 +23,13 @@ export class InvoiceController {
   @Post('add-item')
   addItemToInvoice(
     @Req() req: Request,
-    @Body() body: { medicineId: string; qty: number },
+    @Body() body: { medicineId: string; qty: number,medDiscount: number },
   ) {
     return this.invoiceService.addItemToInvoice(
       req.user as User,
       body.medicineId,
       body.qty,
+      body.medDiscount
     );
   }
 

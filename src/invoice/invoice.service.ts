@@ -22,7 +22,12 @@ export class InvoiceService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
-  async addItemToInvoice(user: User, medicineId: string, qty: number) {
+  async addItemToInvoice(
+    user: User,
+    medicineId: string,
+    qty: number,
+    medDiscount = 0,
+  ) {
     let invoice = await this.getCurrentInvoice(user);
 
     // If no active invoice, create one
@@ -31,7 +36,6 @@ export class InvoiceService {
         where: { organization: { id: user.organization.id } },
         order: { createdAt: 'DESC' },
       });
-      console.log(lastInvoice)
       // Step 2: Determine next invoice number
       let nextNumber = 1;
       if (lastInvoice && lastInvoice.invoiceNumber) {
@@ -40,8 +44,6 @@ export class InvoiceService {
 
       // Step 3: Format number (0001, 0002, etc.)
       const formattedNumber = nextNumber.toString().padStart(6, '0');
-      console.log(formattedNumber)
-
       // Step 4: Create invoice with in
       invoice = this.invoiceRepo.create({
         discount: 0,
@@ -49,12 +51,10 @@ export class InvoiceService {
         netTotal: 0,
         organization: user.organization,
         user,
-        invoiceNumber:parseInt(formattedNumber)
+        invoiceNumber: parseInt(formattedNumber),
       });
-      const a = await this.invoiceRepo.save(invoice);
-      console.log(a)
+      await this.invoiceRepo.save(invoice);
       await this.userRepo.save({ id: user.id, activeInvoice: invoice });
-      console.log("object")
     }
 
     const medicine = await this.medicineRepo.findOne({
@@ -79,11 +79,13 @@ export class InvoiceService {
 
     if (invoiceMedicine) {
       invoiceMedicine.qty = totalRequestedQty;
+      invoiceMedicine.medDiscount = medDiscount;
     } else {
       invoiceMedicine = this.invoiceMedicineRepo.create({
         invoiceId: invoice.id,
         medicineId,
         qty,
+        medDiscount,
         salesPrice: medicine.salesPrice / medicine.packSize,
         purchasePrice: medicine.purchasePrice / medicine.packSize,
       });
@@ -95,17 +97,19 @@ export class InvoiceService {
     const items = await this.invoiceMedicineRepo.find({
       where: { invoiceId: invoice.id },
     });
-    const grossTotal = items.reduce(
-      (sum, item) => sum + item.salesPrice * item.qty,
-      0,
-    );
+
+    const grossTotal = items.reduce((sum, item) => {
+      const medTotal = Number(item.salesPrice) * Number(item.qty);
+      const discountAmt = ((Number(item.medDiscount) || 0) / 100) * medTotal;
+      return sum + (medTotal - discountAmt);
+    }, 0);
 
     invoice.grossTotal = grossTotal;
     invoice.netTotal = grossTotal - invoice.discount;
     invoice.invoiceMedicines = items;
-    const updatedInvoice = await this.invoiceRepo.save(invoice);
+    await this.invoiceRepo.save(invoice);
 
-    return { updatedInvoice };
+    return { message: 'Medicine added to invoice' };
   }
 
   async removeItemFromInvoice(user: User, medicineId: string) {
@@ -118,7 +122,10 @@ export class InvoiceService {
     if (!item) throw new NotFoundException('Item not found in invoice');
 
     // Update totals before removing
-    invoice.grossTotal -= item.salesPrice * item.qty;
+    const medTotal = Number(item.salesPrice) * Number(item.qty);
+    const discountAmt = ((Number(item.medDiscount) || 0) / 100) * medTotal;
+    invoice.grossTotal -= medTotal - discountAmt;
+
     invoice.netTotal = invoice.grossTotal - invoice.discount;
     await this.invoiceRepo.save(invoice);
 
@@ -141,7 +148,9 @@ export class InvoiceService {
 
     // Adjust invoice totals based on qty difference
     const diff = qty - item.qty;
-    invoice.grossTotal += item.salesPrice * diff;
+    const medTotal = Number(item.salesPrice) * Number(diff);
+    const discountAmt = ((Number(item.medDiscount) || 0) / 100) * medTotal;
+    invoice.grossTotal += medTotal - discountAmt;
     invoice.netTotal = invoice.grossTotal - invoice.discount;
 
     item.qty = qty;
@@ -167,11 +176,16 @@ export class InvoiceService {
       relations: ['medicine'],
     });
 
-    // Recalculate gross total from items
-    const grossTotal = items.reduce(
-      (sum, item) => sum + item.salesPrice * item.qty,
-      0,
-    );
+    if (items.length === 0)
+      throw new BadRequestException('Invoice has no items.');
+
+    // --- Step 1: Calculate gross total before discounts ---
+    let grossTotal = 0;
+    for (const item of items) {
+      const medTotal = Number(item.salesPrice) * Number(item.qty);
+      const medDiscountAmt = ((Number(item.medDiscount) || 0) / 100) * medTotal; // apply per-medicine discount
+      grossTotal += medTotal - medDiscountAmt; // discounted per medicine
+    }
 
     // Calculate discount
     const discountAmount = (grossTotal * discountedPercentage) / 100;
