@@ -46,7 +46,7 @@ export class AuthController {
   // Get current user info
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  async getCurrentUser(@Req() req: Request) {
+  getCurrentUser(@Req() req: Request) {
     const user = req.user as User;
     return {
       user: {
