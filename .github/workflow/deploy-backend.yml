@@ -1,0 +1,40 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build
+
+      - name: Upload to EC2
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
+          rsync -avz -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
+            dist/ package.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/pharmacy/backend/
+
+      - name: Restart backend via PM2
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+          "cd /var/www/pharmacy/backend && pm2 start dist/main.js --name pharmacy-backend --update-env || pm2 restart pharmacy-backend"
+
+      - name: Cleanup
+        run: rm -f key.pem
