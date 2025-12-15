@@ -29,12 +29,12 @@ jobs:
           echo "${{ secrets.EC2_KEY }}" > key.pem
           chmod 600 key.pem
           rsync -avz -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
-            dist/ package.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/pharmacy/backend/
+            node_modules dist package.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/pharmacy/backend/
 
       - name: Restart backend via PM2
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-          "cd /var/www/pharmacy/backend && pm2 start src/main.js --name pharmacy-backend --update-env || pm2 restart pharmacy-backend"
+          "cd /var/www/pharmacy/backend && pm2 start dist/src/main.js --name pharmacy-backend --update-env || pm2 restart pharmacy-backend"
 
       - name: Cleanup
         run: rm -f key.pem
