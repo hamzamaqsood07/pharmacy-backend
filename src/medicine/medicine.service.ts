@@ -31,16 +31,14 @@ export class MedicineService {
   }
 
   async createMedicine(createMedicineDto: CreateMedicineDto, reqUser: User) {
-    const qty = createMedicineDto.qty*createMedicineDto.packSize;
     const medicine = this.medicineRepository.create({
       ...createMedicineDto,
-      qty,
       organization: { id: reqUser.organization.id },
     });
 
     const savedMedicine = await this.medicineRepository.save(medicine);
     return {
-      messge: `Medicine ${savedMedicine.name} has been saved successfully`,
+      message: `Medicine ${savedMedicine.name} has been saved successfully`,
     }; 
   }
 

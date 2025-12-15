@@ -17,6 +17,12 @@ export class Organization {
   address: string;
 
   @Column({ nullable: true })
+  licenseNo: string; 
+
+  @Column({ nullable: true })
+  ntnNo: string;
+
+  @Column({ nullable: true })
   phone: string;
 
   @Column({ nullable: true })
