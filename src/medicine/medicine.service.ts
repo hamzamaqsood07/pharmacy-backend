@@ -31,10 +31,8 @@ export class MedicineService {
   }
 
   async createMedicine(createMedicineDto: CreateMedicineDto, reqUser: User) {
-    const qty = createMedicineDto.qty*createMedicineDto.packSize;
     const medicine = this.medicineRepository.create({
       ...createMedicineDto,
-      qty,
       organization: { id: reqUser.organization.id },
     });
 
@@ -64,9 +62,9 @@ export class MedicineService {
     });
     if (!medicine)
       throw new NotFoundException(`Medicine with ID ${id} not found`);
-    const incrementSize = medicine.packSize * packQty;
-    medicine.qty += incrementSize;
-    await this.medicineRepository.save(medicine);
+      const incrementSize = medicine.packSize * packQty;
+      medicine.qty += incrementSize;
+      await this.medicineRepository.save(medicine);
     return {
       message: `Medicine ${medicine.name} is incremented by ${incrementSize}`,
     };

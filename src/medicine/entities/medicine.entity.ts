@@ -14,18 +14,18 @@ export class Medicine {
     qty:number
 
     @Column('decimal', { precision: 10, scale: 2, default: 0 ,transformer: {
-  to: (value: number) => value,  // when saving
-  from: (value: string) => parseFloat(value), // when reading
-}})
+    to: (value: number) => value,  // when saving
+    from: (value: string) => parseFloat(value), // when reading
+    }})
     salesPrice:number
 
     @Column('decimal', { precision: 10, scale: 2, default: 0 ,transformer: {
-  to: (value: number) => value,  // when saving
-  from: (value: string) => parseFloat(value), // when reading
-}})
+    to: (value: number) => value,  // when saving
+    from: (value: string) => parseFloat(value), // when reading
+    }})
     purchasePrice:number
 
-    @Column()
+    @Column({default:0})
     packSize:number
 
     @Column({type:'timestamp',default:()=>"NOW()"})

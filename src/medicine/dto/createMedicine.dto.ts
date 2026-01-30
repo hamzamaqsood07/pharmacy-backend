@@ -13,7 +13,4 @@ export class CreateMedicineDto {
 
     @IsNumber()
     packSize:number
-
-    @IsNumber()
-    qty:number
 }
