@@ -38,7 +38,7 @@ export class MedicineService {
 
     const savedMedicine = await this.medicineRepository.save(medicine);
     return {
-      messge: `Medicine ${savedMedicine.name} has been saved successfully`,
+      message: `Medicine ${savedMedicine.name} has been saved successfully`,
     }; 
   }
 
