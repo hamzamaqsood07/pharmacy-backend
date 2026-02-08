@@ -31,6 +31,13 @@ export class MedicineService {
   }
 
   async createMedicine(createMedicineDto: CreateMedicineDto, reqUser: User) {
+    const existingMedicine = await this.medicineRepository.findOneBy({
+      name: createMedicineDto.name,
+      organization: { id: reqUser.organization.id },});
+
+    if (existingMedicine) {
+      throw new NotFoundException(`Medicine with name ${createMedicineDto.name} already exists`);
+    }
     const medicine = this.medicineRepository.create({
       ...createMedicineDto,
       organization: { id: reqUser.organization.id },

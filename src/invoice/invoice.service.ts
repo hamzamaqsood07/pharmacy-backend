@@ -248,7 +248,7 @@ export class InvoiceService {
 
   async getCurrentInvoice(user: User) {
     if (!user.activeInvoiceId) return null;
-    return this.invoiceRepo.findOne({
+    const invoice = await this.invoiceRepo.findOne({
       where: {
         organization: { id: user.organization.id },
         id: user.activeInvoiceId,
@@ -260,6 +260,7 @@ export class InvoiceService {
         'invoiceMedicines.medicine',
       ],
     });
+    return invoice;
   }
 
   async discardCurrentInvoice(user: User) {
